@@ -28,3 +28,23 @@ DATABASES = {
         'PORT': db_port,
     }
 }
+
+
+# Channel layer
+# https://www.slideshare.net/deview/django-websocket/16?src=clipshare
+redis_host = os.environ.get('REDIS_HOST', '')
+redis_port_str = os.environ.get('REDIS_HOST', '0')
+redis_port = int(redis_port_str)
+
+if len(redis_host) == 0 or redis_port <= 0:
+    sys.exit('redis_host or redis_port is empty.')
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "asgi_redis.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [(redis_host, redis_port)],
+        },
+        "ROUTING": "backend.routing.channel_routing",
+    },
+}
