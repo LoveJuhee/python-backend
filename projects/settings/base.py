@@ -10,8 +10,10 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/1.11/ref/settings/
 """
 
-import os
+import ast
 import json
+import os
+
 from django.core.exceptions import ImproperlyConfigured
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
@@ -25,7 +27,7 @@ with open("secrets.json") as f:
     secrets = json.loads(f.read())
 
 
-def __get_secret(setting, secrets=secrets):
+def get_secret(setting, secrets=secrets):
     try:
         return secrets[setting]
     except KeyError:
@@ -33,7 +35,10 @@ def __get_secret(setting, secrets=secrets):
         raise ImproperlyConfigured(error_msg)
 
 
-SECRET_KEY = __get_secret("SECRET_KEY")
+SECRET_KEY = get_secret("SECRET_KEY")
+
+PRODUCT_ALLOWED_HOSTS_JSON = get_secret('PRODUCT_ALLOWED_HOSTS')
+PRODUCT_ALLOWED_HOSTS = ast.literal_eval(PRODUCT_ALLOWED_HOSTS_JSON)
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
