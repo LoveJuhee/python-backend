@@ -4,12 +4,11 @@ from channels import Group
 from channels.sessions import channel_session
 
 from ntm.utils.logger import CustomLogger
+from ntm.utils.web_socket import WebSocketUtil
 
 from .models import Center
 
-log = CustomLogger.__call__().get_logger()
-
-accounts = []
+log = CustomLogger().get_logger()
 
 
 def __get_group(label, channel_layer):
@@ -24,15 +23,12 @@ def ws_connect(message):
             log.debug('invalid ws path=%s', message['path'])
             return
         center = Center.objects.get(label=label)
-        account = {'id': id, 'key': str(message.reply_channel)}
-        accounts.append(account)
+        key = str(message.reply_channel)
+        consumer = WebSocketUtil.append(label, key, id)
+        log.debug('append consumer:%s', consumer)
     except ValueError as e:
         log.debug('invalid ws path=%s', message['path'])
         return
-
-    log.debug('chat connect center=%s client=%s:%s path=%s reply_channel=%s',
-              center.label, message['client'][0], message['client'][1],
-              message['path'], message.reply_channel)
 
     message.reply_channel.send({"accept": True})
     __get_group(label, message.channel_layer).add(message.reply_channel)
@@ -76,27 +72,19 @@ def ws_receive(message):
 def ws_disconnect(message):
     try:
         label = message.channel_session['center']
-        center = Center.objects.get(label=label)
+        # center = Center.objects.get(label=label)
         group = __get_group(label, message.channel_layer)
         group.discard(message.reply_channel)
 
-        log.debug('label:%s, channel_layer:%s, center.name:%s',
-                  label,
-                  message.channel_layer,
-                  center.name)
-
         key = str(message.reply_channel)
-        for tmp in accounts:
-            if tmp['key'] == key:
-                account = tmp
-                break
-        accounts.remove(account)
-        log.debug('account size: %d', len(accounts))
+        consumer = WebSocketUtil.discard(label, key)
+        if consumer is None:
+            log.debug('discard consumer is None')
+            return
 
         data = {
-            'message': account['id'] + ' is disconnected.'
+            'message': consumer.name + ' is disconnected.'
         }
-
         group.send({'text': json.dumps(data)})
     except (KeyError, Center.DoesNotExist):
         pass
