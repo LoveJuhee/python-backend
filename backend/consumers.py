@@ -3,11 +3,10 @@ import json
 from channels import Group
 from channels.sessions import channel_session
 
-from ntm.utils.logger import CustomLogger
+from ntm.utils.logger import log
+from ntm.utils.web_socket import WebSocketUtil
 
 from .models import Center
-
-log = CustomLogger.__call__().get_logger()
 
 
 def __get_group(label, channel_layer):
@@ -17,36 +16,35 @@ def __get_group(label, channel_layer):
 @channel_session
 def ws_connect(message):
     try:
-        prefix, label = message['path'].strip('/').split('/')
+        prefix, label, id = message['path'].strip('/').split('/')
         if prefix != 'chat':
             log.debug('invalid ws path=%s', message['path'])
             return
-        room = Center.objects.get(label=label)
+        center = Center.objects.get(label=label)
+        key = str(message.reply_channel)
+        consumer = WebSocketUtil.append(label, key, id)
+        log.debug('append consumer:%s', consumer)
     except ValueError as e:
         log.debug('invalid ws path=%s', message['path'])
         return
 
-    log.debug('chat connect room=%s client=%s:%s path=%s reply_channel=%s',
-              room.label, message['client'][0], message['client'][1],
-              message['path'], message.reply_channel)
-
     message.reply_channel.send({"accept": True})
     __get_group(label, message.channel_layer).add(message.reply_channel)
 
-    message.channel_session['room'] = room.label
+    message.channel_session['center'] = center.label
 
 
 @channel_session
 def ws_receive(message):
     try:
-        label = message.channel_session['room']
-        room = Center.objects.get(label=label)
-        log.debug('label=%s, room=%s', label, room)
+        label = message.channel_session['center']
+        center = Center.objects.get(label=label)
+        log.debug('label:%s, center.name:%s', label, center.name)
     except KeyError:
-        log.debug('no room in channel_session')
+        log.debug('no center in channel_session')
         return
     except Center.DoesNotExist:
-        log.debug('recieved message, but room does not exist label=%s', label)
+        log.debug('recieved message, but center does not exist label=%s', label)
         return
 
     try:
@@ -60,9 +58,9 @@ def ws_receive(message):
         return
 
     if data:
-        log.debug('chat message room=%s handle=%s message=%s',
-                  room.label, data['handle'], data['message'])
-        m = room.messages.create(**data)
+        log.debug('chat message center=%s handle=%s message=%s',
+                  center.label, data['handle'], data['message'])
+        m = center.messages.create(**data)
 
         group = __get_group(label, message.channel_layer)
         group.send({'text': json.dumps(m.as_dict())})
@@ -71,9 +69,20 @@ def ws_receive(message):
 @channel_session
 def ws_disconnect(message):
     try:
-        label = message.channel_session['room']
-        # room = Center.objects.get(label=label)
+        label = message.channel_session['center']
+        # center = Center.objects.get(label=label)
         group = __get_group(label, message.channel_layer)
         group.discard(message.reply_channel)
+
+        key = str(message.reply_channel)
+        consumer = WebSocketUtil.discard(label, key)
+        if consumer is None:
+            log.debug('discard consumer is None')
+            return
+
+        data = {
+            'message': consumer.name + ' is disconnected.'
+        }
+        group.send({'text': json.dumps(data)})
     except (KeyError, Center.DoesNotExist):
         pass

@@ -14,7 +14,7 @@ class SingletonType(type):
             return cls.__instance
 
 
-class CustomLogger(object):
+class _CustomLogger(object):
     __metaclass__ = SingletonType
     _logger = None
 
@@ -42,3 +42,6 @@ class CustomLogger(object):
 
     def get_logger(self):
         return self._logger
+
+
+log = _CustomLogger.__call__().get_logger()
