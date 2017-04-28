@@ -31,7 +31,7 @@ class CustomLogger(object):
         if not os.path.isdir(dirname):
             os.mkdir(dirname)
         fileHandler = logging.FileHandler(
-            dirname + "/" + now.strftime("%Y%m%d_%H%M%S_%Z") + ".log")
+            dirname + "/" + now.strftime("%Y%m%d_%Z") + ".log")
         streamHandler = logging.StreamHandler()
 
         fileHandler.setFormatter(formatter)

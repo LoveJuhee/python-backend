@@ -3,7 +3,7 @@ import json
 from channels import Group
 from channels.sessions import channel_session
 
-from ne.utils.logger import CustomLogger
+from ntm.utils.logger import CustomLogger
 
 from .models import Center
 
