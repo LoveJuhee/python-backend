@@ -16,13 +16,15 @@ class ObjectUtil():
         pprint.pprint(item, s, indent, width, depth)
         return s.getvalue()
 
-    @staticmethod
-    def is_null_or_empty(item):
-        if item is None:
+    def is_null_or_empty(*args):
+        if len(args) == 0:
             return True
         try:
-            if len(item) > 0:
-                return False
+            for item in args:
+                if item is None:
+                    return True
+                elif len(item) == 0:
+                    return True
         except:
             return True
-        return True
+        return False
