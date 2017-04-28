@@ -1,8 +1,7 @@
-from ntm.utils.logger import CustomLogger
-from ntm.utils.object import ObjectUtil
 from django.utils import timezone
 
-log = CustomLogger.__call__().get_logger()
+from ntm.utils.logger import log
+from ntm.utils.object import ObjectUtil
 
 
 class Consumer(object):

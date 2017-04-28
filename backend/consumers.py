@@ -3,12 +3,10 @@ import json
 from channels import Group
 from channels.sessions import channel_session
 
-from ntm.utils.logger import CustomLogger
+from ntm.utils.logger import log
 from ntm.utils.web_socket import WebSocketUtil
 
 from .models import Center
-
-log = CustomLogger().get_logger()
 
 
 def __get_group(label, channel_layer):
